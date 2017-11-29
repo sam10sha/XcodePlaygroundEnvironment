@@ -1,0 +1,14 @@
+<job>
+<center>Los Angeles Technical Center (LATC)</center>
+<machine>LCG 3015 AJ-4K FIBER LASER</machine>
+<customer>Customer Name</customer>
+<engineer>Engineer Name</engineer>
+<salesman>Salesman Name</salesman>
+<laser_material_name>A-A1050-0.5-L1</laser_material_name>
+<e_value>3</e_value>
+<parts>
+<part>D:\AP100US\ap32_2018\PARTS\DEMO1.prt</part>
+<part>D:\AP100US\ap32_2018\PARTS\DEMO2.prt</part>
+</parts>
+<report>d:\test.pdf</report>
+</job>
