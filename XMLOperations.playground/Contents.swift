@@ -52,7 +52,7 @@ public class XMLParseTool {
     }
     
     
-    fileprivate static func getContentsOfNthElementOfKey(strtoParse string: String, elementKey key: String, nthElement n: Int) -> String? {
+    fileprivate static func getContentsOfNthElementOfKey(xmlToParse string: String, elementKey key: String, nthElement n: Int) -> String? {
         let startTag = "<\(key)>"
         let endTag = "</\(key)>"
         
@@ -181,7 +181,7 @@ do {
     let fileURL = Bundle.main.url(forResource: "result", withExtension: "xml")
     let result = try String(contentsOf: fileURL!, encoding: .utf8)
     
-    let part = XMLParseTool.getContentsOfNthElementOfKey(strtoParse: result, elementKey: "part", nthElement: 0)
+    let part = XMLParseTool.getContentsOfNthElementOfKey(xmlToParse: result, elementKey: "part", nthElement: 0)
     print(part!)
 } catch {
     print("Error reading file")
@@ -195,7 +195,7 @@ do {
 
 /* let x = "<parts><part><part>hello world</part></part></parts>"
 let z = ""
-let y = XMLParseTool.getContentsOfNthElementOfKey(strtoParse: x, elementKey: "part", nthElement: 0)
+let y = XMLParseTool.getContentsOfNthElementOfKey(xmlToParse: x, elementKey: "part", nthElement: 0)
 
 print("y = \(y ?? "nil")") */
 
