@@ -12,13 +12,13 @@ let amadaPortNum = 6612
 do {
     let fileURL = Bundle.main.url(forResource: "batch", withExtension: "xml")
     let fileContents = try String(contentsOf: fileURL!, encoding: String.Encoding.utf8)
-    print("File: batch.txt");
+    print("File: batch.xml");
     print("File contents:")
     print(fileContents)
     
     
     // Initialize connection
-    let fileClient = CoreCommunicator(serverIP: amadaIPAddr, serverPortNum: amadaPortNum)
+    let fileClient = TCPClient(serverIP: amadaIPAddr, serverPortNum: amadaPortNum)
     fileClient.openConnectionStreams()
     
     var fileSize = UInt32(fileContents.count)

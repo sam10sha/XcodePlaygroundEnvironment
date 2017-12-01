@@ -1,6 +1,6 @@
 import Foundation
 
-public struct CoreCommunicator {
+public struct TCPClient {
     private var myInput: InputStream?
     private var myOutput: OutputStream?
     
