@@ -2,27 +2,14 @@
 
 import UIKit
 
-do {
-    let fileURL = Bundle.main.url(forResource: "batch", withExtension: "xml")
-    let fileContents = try String(contentsOf: fileURL!, encoding: String.Encoding.utf8)
-    print("File: batch.xml");
-    print("File contents:")
-    print(fileContents)
-    
-    
-} catch {
-    print("Error reading file")
-}
-
 
 private func readFile(output: inout Data?, numCharsRead: inout Int32) -> Bool {
     var success = true
     let fileURL = Bundle.main.url(forResource: "batch", withExtension: "xml")
     if(fileURL != nil) {
         do {
-            var count = 0
             let fileContents = try String(contentsOf: fileURL!, encoding: .utf8)
-            let output = fileContents.data(using: .utf8)
+            output = fileContents.data(using: .utf8)
             numCharsRead = Int32(fileContents.count)
         } catch {
             success = false
@@ -54,7 +41,6 @@ private func communicateFileWithServer(transmissionData: Data, transmissionSize:
                     return receptionSizePtr.pointee
                 })
                 switchEndianFormat(bytes: &numReceptionBytes, numBytes: MemoryLayout<Int32>.stride)
-                NSLog("NetworkCommunicator: Number of bytes expected to be received: \(numReceptionBytes)")
                 if(tcpClient.receiveData(storage: &receptionData, expectedNumBytes: Int(numReceptionBytes)) ==  true) {
                     success = true
                 }
@@ -66,3 +52,185 @@ private func communicateFileWithServer(transmissionData: Data, transmissionSize:
     
     return success
 }
+
+
+class XMLParseHandler_2: NSObject, XMLParserDelegate {
+    var currentElementKey: String?
+    var currentPartNode: XMLNode?
+    
+    var resultReport: XMLValue?
+    var resultPartNodes: [XMLNode] = []
+    
+    // Properties
+    var Report: XMLValue? {
+        return resultReport
+    }
+    
+    var Parts: [XMLNode] {
+        return resultPartNodes
+    }
+    
+    
+    // Member functions
+    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+        
+        currentElementKey = elementName
+        if(elementName == "part") {
+            currentPartNode = XMLNode(elementKey: elementName)
+        }
+    }
+    
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
+        if(string != "") {
+            if(currentElementKey != nil) {
+                if(currentElementKey == "report") {
+                    resultReport = XMLValue(xmlKey: currentElementKey!, xmlElement: string)
+                } else if(currentElementKey == "part_name" ||
+                    currentElementKey == "part_size" ||
+                    currentElementKey == "part_time" ||
+                    currentElementKey == "part_nc") {
+                    
+                    if(currentPartNode != nil) {
+                        let xmlVal = XMLValue(xmlKey: currentElementKey!, xmlElement: string)
+                        currentPartNode?.addElement(element: xmlVal)
+                    }
+                }
+            }
+        }
+    }
+    
+    public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        
+        if(elementName == "part" && currentPartNode != nil) {
+            resultPartNodes.append(currentPartNode!)
+            currentPartNode = nil
+        }
+        currentElementKey = nil
+    }
+}
+
+class XMLParseHandler: NSObject, XMLParserDelegate {
+    var Parts: [XMLElement] {
+        return []
+    }
+    
+    var Report: XMLElement? {
+        return nil
+    }
+    
+    // Member functions
+    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+        
+    }
+    
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
+        
+    }
+    
+    public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        
+    }
+}
+
+
+
+func parseJobResultsXML(resultsDataToParse data: Data) -> XMLDocument {
+    let xmlParser = XMLParser(data: data)
+    let xmlParseHandler = XMLParseHandler()
+    xmlParser.delegate = xmlParseHandler
+    xmlParser.parse()
+    
+    var xmlDoc = XMLDocument(rootName: "result")
+    var partsNode = XMLNode(elementKey: "parts")
+    let report = xmlParseHandler.Report
+    
+    let parts = xmlParseHandler.Parts
+    for part in parts {
+        partsNode.addElement(element: part)
+    }
+    xmlDoc.addXMLElement(xmlElement: partsNode)
+    if(report != nil) {
+        xmlDoc.addXMLElement(xmlElement: report!)
+    }
+    return xmlDoc
+}
+
+
+
+
+func printReport(xmlDoc: XMLDocument) {
+    var report: XMLValue?
+    var index = 0
+    while index < xmlDoc.XMLElements.count &&
+        xmlDoc.XMLElements[index].XMLKey != "report" {
+            
+            index += 1
+    }
+    if(index < xmlDoc.XMLElements.count) {
+        report = (xmlDoc.XMLElements[index] as! XMLValue)
+        print(report!.XMLElement)
+    }
+}
+
+func printParts(xmlDoc: XMLDocument) {
+    var index = 0
+    while index < xmlDoc.XMLElements.count &&
+        xmlDoc.XMLElements[index].XMLKey != "parts" {
+            
+            index += 1
+    }
+    if(index < xmlDoc.XMLElements.count) {
+        let parts = xmlDoc.XMLElements[index] as! XMLNode
+        for part in parts.XMLElements {
+            for element in (part as! XMLNode).XMLElements {
+                print("\((element as! XMLValue).XMLKey): \((element as! XMLValue).XMLElement)")
+            }
+            print("")
+        }
+    }
+}
+
+func printNumberOfElementsInXMLDoc(xmlDoc: XMLDocument) {
+    print(xmlDoc.XMLElements.count)
+}
+
+
+
+
+
+
+
+
+
+var transmissionData: Data?
+var receptionData: Data?
+var transmissionSize: Int32 = 0
+
+// reading batch file to send to server
+if(readFile(output: &transmissionData, numCharsRead: &transmissionSize) == true) {
+    if(communicateFileWithServer(transmissionData: transmissionData!, transmissionSize: transmissionSize, receptionData: &receptionData) == true) {
+        //let xmlDoc = parseJobResultsXML(resultsDataToParse: receptionData!)
+        let xmlParseToolPart = XMlSingleElementParseTool(xmlData: receptionData!, keyToParse: "part")
+        let xmlParseToolReport = XMlSingleElementParseTool(xmlData: receptionData!, keyToParse: "report")
+        
+        xmlParseToolPart.parse()
+        xmlParseToolReport.parse()
+        
+        let part1 = xmlParseToolPart.getContentsOfNthElementOfKey(nthElement: 0)
+        let part2 = xmlParseToolPart.getContentsOfNthElementOfKey(nthElement: 1)
+        let report = xmlParseToolReport.getContentsOfNthElementOfKey(nthElement: 0)
+        print(part1!)
+        print(part2!)
+        print(report!)
+    }
+}
+print("Done")
+
+
+
+
+
+
+
+
+
