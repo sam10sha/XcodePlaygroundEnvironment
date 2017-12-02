@@ -110,25 +110,24 @@ class XMLParseHandler_2: NSObject, XMLParserDelegate {
 }
 
 class XMLParseHandler: NSObject, XMLParserDelegate {
-    var Parts: [XMLElement] {
-        return []
-    }
+    private var myCurrentXMLElementKey: String?
+    private var myXMLElements: [XMLValue] = []
     
-    var Report: XMLElement? {
-        return nil
+    var Parts: [XMLValue] {
+        return myXMLElements
     }
     
     // Member functions
     public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
-        
+        myCurrentXMLElementKey = elementName
     }
     
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
-        
-    }
-    
-    public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
-        
+        if myCurrentXMLElementKey != nil {
+            let xmlValue = XMLValue(xmlKey: myCurrentXMLElementKey!, xmlElement: string)
+            myXMLElements.append(xmlValue)
+            myCurrentXMLElementKey = nil
+        }
     }
 }
 
@@ -136,7 +135,7 @@ class XMLParseHandler: NSObject, XMLParserDelegate {
 
 func parseJobResultsXML(resultsDataToParse data: Data) -> XMLDocument {
     let xmlParser = XMLParser(data: data)
-    let xmlParseHandler = XMLParseHandler()
+    let xmlParseHandler = XMLParseHandler_2()
     xmlParser.delegate = xmlParseHandler
     xmlParser.parse()
     
@@ -209,19 +208,17 @@ var transmissionSize: Int32 = 0
 // reading batch file to send to server
 if(readFile(output: &transmissionData, numCharsRead: &transmissionSize) == true) {
     if(communicateFileWithServer(transmissionData: transmissionData!, transmissionSize: transmissionSize, receptionData: &receptionData) == true) {
-        //let xmlDoc = parseJobResultsXML(resultsDataToParse: receptionData!)
-        let xmlParseToolPart = XMlSingleElementParseTool(xmlData: receptionData!, keyToParse: "part")
-        let xmlParseToolReport = XMlSingleElementParseTool(xmlData: receptionData!, keyToParse: "report")
+        let xmlParseToolPart = XMLSingleElementParseTool(xmlData: receptionData!, keyToParse: "part")
+        let xmlParseToolReport = XMLSingleElementParseTool(xmlData: receptionData!, keyToParse: "report")
         
-        xmlParseToolPart.parse()
-        xmlParseToolReport.parse()
         
-        let part1 = xmlParseToolPart.getContentsOfNthElementOfKey(nthElement: 0)
-        let part2 = xmlParseToolPart.getContentsOfNthElementOfKey(nthElement: 1)
-        let report = xmlParseToolReport.getContentsOfNthElementOfKey(nthElement: 0)
-        print(part1!)
-        print(part2!)
-        print(report!)
+        var partIndex = 0
+        var partsList: [String] = []
+        var report = xmlParseToolReport.getContentsOfNthElementOfKey(nthElement: 0)
+        while let part = xmlParseToolPart.getContentsOfNthElementOfKey(nthElement: partIndex) {
+            partsList.append(part)
+            partIndex += 1
+        }
     }
 }
 print("Done")

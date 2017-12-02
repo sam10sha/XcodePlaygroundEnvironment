@@ -113,7 +113,7 @@ public struct XMLDocument: CustomStringConvertible {
 
 
 
-public class XMlSingleElementParseTool {
+public class XMLSingleElementParseTool {
     private let myXMLData: String?
     private let myXMLStartTag: String
     private let myXMLEndTag: String
